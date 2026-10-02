@@ -15,25 +15,25 @@ This solution captures live user interactions from Cloud Logging, normalizes mul
 
 ```mermaid
 graph TD
-    A[Gemini Enterprise / AgentSpace] -->|Runtime RPCs: Search, WriteUserEvent| B[Cloud Logging Sink]
-    B -->|Filtered by logName & serviceLabel| C[(BigQuery Raw Sink Table)]
+    A["Gemini Enterprise / AgentSpace"] -->|Runtime RPCs: Search, WriteUserEvent| B["Cloud Logging Sink"]
+    B -->|Filtered by logName & serviceLabel| C[("BigQuery Raw Sink Table")]
     
-    D[(IdP Directory: Okta / Entra / LDAP)] -->|Sync / Export| E[vw_canonical_users]
+    D[("IdP Directory: Okta / Entra / LDAP")] -->|Sync / Export| E["vw_canonical_users"]
     
     subgraph BigQuery Transformation Layer
-        E -->|LEFT JOIN on normalized UPN| F[vw_user_adoption / vw_ds_executive_adoption]
+        E -->|LEFT JOIN on normalized UPN| F["vw_user_adoption / vw_ds_executive_adoption"]
         C --> F
-        C --> G[vw_events_flattened / vw_ds_feedback_metrics]
-        C --> H[vw_feedback_detailed / vw_ds_feedback_details]
+        C --> G["vw_events_flattened / vw_ds_feedback_metrics"]
+        C --> H["vw_feedback_detailed / vw_ds_feedback_details"]
     end
     
     subgraph Visualization Layer
-        F --> I[Looker Enterprise Dashboard (Deprecated)]
+        F --> I["Looker Enterprise Dashboard (Deprecated)"]
         G --> I
         H --> I
         
-        F --> J[Looker Studio: Executive View]
-        G --> K[Looker Studio: Feedback View]
+        F --> J["Looker Studio: Executive View"]
+        G --> K["Looker Studio: Feedback View"]
         H --> K
     end
 ```
