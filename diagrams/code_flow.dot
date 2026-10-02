@@ -1,0 +1,158 @@
+digraph AES_Monitoring_Code_Flow {
+    graph [
+        rankdir="TB",
+        nodesep=0.7,
+        ranksep=1.0,
+        fontname="Helvetica,Arial,sans-serif",
+        fontsize=12,
+        compound=true,
+        bgcolor="#f8f9fa",
+        pad=0.5
+    ];
+
+    node [
+        fontname="Helvetica,Arial,sans-serif",
+        fontsize=10,
+        shape=box,
+        style="rounded,filled",
+        fillcolor="#ffffff",
+        color="#cfd4da",
+        penwidth=1.5
+    ];
+
+    edge [
+        fontname="Helvetica,Arial,sans-serif",
+        fontsize=9,
+        color="#6c757d",
+        arrowsize=0.8,
+        penwidth=1.2
+    ];
+
+    // --- LEVEL 1: Ingestion & Raw Sources ---
+    subgraph cluster_ingestion {
+        label = "Layer 1: Ingestion & Raw Sources";
+        style = "filled";
+        color = "#e2e8f0";
+        fillcolor = "#edf2f7";
+        fontname = "Helvetica-Bold";
+        fontsize = 11;
+
+        log_explorer [
+            label = "Cloud Logging\n(Log Explorer Sink)",
+            shape = component,
+            fillcolor = "#e3f2fd",
+            color = "#1e88e5"
+        ];
+
+        okta_source [
+            label = "IdP Directory Sync\n(Okta / Entra ID / LDAP)",
+            shape = cylinder,
+            fillcolor = "#fff3e0",
+            color = "#fb8c00"
+        ];
+
+        bq_usage_audit [
+            label = "BigQuery Table:\ndiscoveryengine_googleapis_com_gemini_enterprise_user_activity\n(Raw JSON logs)",
+            shape = cylinder,
+            fillcolor = "#e8f5e9",
+            color = "#43a047"
+        ];
+
+        bq_okta_users [
+            label = "BigQuery Table:\nokta_user_principals\n(Licensed user baseline: 5,800)",
+            shape = cylinder,
+            fillcolor = "#fff3e0",
+            color = "#fb8c00"
+        ];
+    }
+
+    // --- LEVEL 2: BigQuery View Transformation Layer ---
+    subgraph cluster_bigquery_views {
+        label = "Layer 2: BigQuery Transformation Views (summit_2026_bw_ge_logs_demo)";
+        style = "filled";
+        color = "#c8e6c9";
+        fillcolor = "#f1f8e9";
+        fontname = "Helvetica-Bold";
+        fontsize = 11;
+
+        vw_canonical_users [
+            label = "vw_canonical_users\n• Normalizes UPN casing & whitespace\n• Filters active accounts",
+            fillcolor = "#ffffff",
+            color = "#2e7d32"
+        ];
+
+        vw_user_adoption [
+            label = "vw_user_adoption (Gap Analysis)\n• LEFT JOIN Okta ➔ Log Events\n• Flags 'needs_follow_up'\n• Identifies 'Never Logged In'",
+            fillcolor = "#ffffff",
+            color = "#2e7d32"
+        ];
+
+        vw_events_flattened [
+            label = "vw_events_flattened\n• Extracts event_type, prompt flags\n• Dates & search volume counts",
+            fillcolor = "#ffffff",
+            color = "#2e7d32"
+        ];
+
+        vw_feedback_detailed [
+            label = "vw_feedback_detailed\n• UNNESTs feedback reasons\n• 10-min contextual history array",
+            fillcolor = "#ffffff",
+            color = "#2e7d32"
+        ];
+    }
+
+    // --- LEVEL 3: BI Dashboards ---
+    subgraph cluster_looker_dashboard {
+        label = "Layer 3: Looker Enterprise & Looker Studio Dashboards";
+        style = "filled";
+        color = "#bbdefb";
+        fillcolor = "#e3f2fd";
+        fontname = "Helvetica-Bold";
+        fontsize = 11;
+
+        tile_kpi_users [
+            label = "Adoption & License KPIs\n• Total Users (5,800)\n• Active Users\n• Never Logged In (The Gap)\n• % Adoption Rate",
+            shape = note,
+            fillcolor = "#ffffff",
+            color = "#0288d1"
+        ];
+
+        tile_regional_bars [
+            label = "Regional & Org Breakdown\n• User Login by Region (Stacked)\n• User Login by Business Unit (Stacked)\n• Supervisor Matrix Pivot Grid",
+            shape = note,
+            fillcolor = "#ffffff",
+            color = "#0288d1"
+        ];
+
+        tile_charts_feedback [
+            label = "Feedback Breakdown\n• Dislike Reasons (Pie Chart)\n• Reason Counts (Bar/Table)\n• Feedback Comments Leaderboard",
+            shape = note,
+            fillcolor = "#ffffff",
+            color = "#0288d1"
+        ];
+
+        tile_detail_grid [
+            label = "Master Detail Table\n• User & Feedback Details\n• Chronological context & queries",
+            shape = note,
+            fillcolor = "#ffffff",
+            color = "#0288d1"
+        ];
+    }
+
+    // Ingestion Edges
+    log_explorer -> bq_usage_audit [label = "Log Sink (JSON)"];
+    okta_source -> bq_okta_users [label = "IdP Sync"];
+
+    // BQ View Transformations
+    bq_okta_users -> vw_canonical_users [label = "Normalized"];
+    vw_canonical_users -> vw_user_adoption [label = "Base table"];
+    bq_usage_audit -> vw_user_adoption [label = "LEFT JOIN on principal"];
+    bq_usage_audit -> vw_events_flattened [label = "JSON extraction"];
+    bq_usage_audit -> vw_feedback_detailed [label = "UNNEST & Context ARRAY_AGG"];
+
+    // Direct Dashboard Connections
+    vw_user_adoption -> tile_kpi_users [label = "Powers user counts\n& gap metrics"];
+    vw_user_adoption -> tile_regional_bars [label = "Powers regional/BU breakdown"];
+    vw_events_flattened -> tile_kpi_users [label = "Powers prompt counts"];
+    vw_feedback_detailed -> tile_charts_feedback [label = "Powers sentiment charts"];
+    vw_feedback_detailed -> tile_detail_grid [label = "Powers journey details"];
+}
