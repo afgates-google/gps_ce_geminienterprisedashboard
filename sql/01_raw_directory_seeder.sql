@@ -1,11 +1,13 @@
 -- =============================================================================
--- 01_synthetic_directory.sql
--- Purpose: Creates a synthetic user identity directory (okta_user_principals)
---          matching the 5,800-user executive hierarchy with regions,
---          business units, and supervisors.
+-- Tier 0: Raw Ingestion / Identity Seeder
+-- File: sql/01_raw_directory_seeder.sql
+--
+-- Purpose: Seeds the raw directory table (okta_user_principals) representing
+--          an IdP export (Okta, Entra ID, Ping, or LDAP) with 5,800 licensed
+--          user accounts across 12 public-sector regions, business units,
+--          and supervisors.
 --
 -- Target Dataset: `state-of-texas-agentspace-demo.summit_2026_bw_ge_logs_demo`
--- Note: Replace project and dataset references with your target environment.
 -- =============================================================================
 
 CREATE OR REPLACE TABLE `state-of-texas-agentspace-demo.summit_2026_bw_ge_logs_demo.okta_user_principals` AS
@@ -29,7 +31,7 @@ BusinessUnits AS (
           'TX Works Region 04', 'TX Works Region 1', 'TX Works Region 10', 'TX Works Region 02/09'] AS units
 )
 SELECT
-  -- RFC 2606 sanitized principal
+  -- RFC 2606 compliant email/UPN
   LOWER(CONCAT('user.', LPAD(CAST(idx AS STRING), 4, '0'), '@example.gov')) AS userPrincipalName,
   CONCAT(fn, ' ', ln) AS displayName,
   Regions.codes[OFFSET(MOD(idx, ARRAY_LENGTH(Regions.codes)))] AS region,
@@ -43,7 +45,7 @@ FROM
   UNNEST([FirstNames.names[OFFSET(MOD(idx, 10))]]) AS fn,
   UNNEST([LastNames.names[OFFSET(MOD(CAST(idx / 10 AS INT64), 10))]]) AS ln;
 
--- Optional: Seed active admin user for live testing
+-- Seed an active admin user for live end-to-end testing
 INSERT INTO `state-of-texas-agentspace-demo.summit_2026_bw_ge_logs_demo.okta_user_principals`
   (userPrincipalName, displayName, region, businessUnit, supervisorName, accountStatus, created_at)
 VALUES (

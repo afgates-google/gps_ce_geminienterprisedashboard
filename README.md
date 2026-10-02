@@ -613,20 +613,16 @@ Click **Add page** in the top menu and rename the tab to **"Feedback Metrics"**.
 
 ## Deliverables Summary
 
-| Deliverable | Location / Name | Purpose |
+| Deliverable | Location / Name | Layer & Purpose |
 | :--- | :--- | :--- |
-| **Log Filter** | Cloud Logging | Filters Gemini Enterprise logs across any GCP project. |
-| **Synthetic Directory** | `sql/01_synthetic_directory.sql` | Generates 5,800 sanitized sample users across 12 regions & 12 BUs. |
-| **Adapter View** | `vw_canonical_users` | Normalizes UPN case, trims whitespace, filters active accounts. |
-| **Adoption View** | `vw_user_adoption` | Surfaces the "Never Logged In" gap and adoption %. |
-| **Flattened Events** | `vw_events_flattened` | Standardizes search and prompt event counts. |
-| **Feedback View** | `vw_feedback_detailed` | Unpacks reasons and links 10-minute preceding query context. |
-| **Looker Studio Executive**| `vw_ds_executive_adoption` | Powers Page 1: Regional/BU stacked bars and pivot matrix. |
-| **Looker Studio Feedback** | `vw_ds_feedback_metrics` | Powers Page 2: Dislike reasons pie, donut, reason counts. |
-| **Looker Studio Details**  | `vw_ds_feedback_details` | Powers Page 2: Multiline user journey table via `STRING_AGG`. |
-| **LookML Model (Dep.)**   | `looker/models/agentspace_monitoring.model.lkml` | Joins directory to activity events. |
+| **Log Filter** | Cloud Logging | Ingestion: Filters Gemini Enterprise logs across any GCP project. |
+| **Directory Seeder** | `sql/01_raw_directory_seeder.sql` | Tier 0: Generates 5,800 sample users across 12 regions & 12 BUs. |
+| **Identity Adapter** | `sql/02_tier1_identity_adapter.sql` | Tier 1: Canonical view (`vw_canonical_users`) normalizing UPN casing. |
+| **Telemetry Core** | `sql/03_tier2_telemetry_normalization.sql` | Tier 2: Event flattening (`vw_events_flattened`) and feedback context (`vw_feedback_detailed`). |
+| **Adoption Marts** | `sql/04_tier3_adoption_marts.sql` | Tier 3: Presentation views (`vw_ds_executive_adoption`, `vw_ds_feedback_metrics`, `vw_ds_feedback_details`). |
+| **LookML Model (Dep.)** | `looker/models/agentspace_monitoring.model.lkml` | Joins directory to activity events for Looker Enterprise. |
 | **LookML Dashboard (Dep.)**| `looker/dashboards/aes_knowledge_assistant.dashboard.lookml` | Visual layout for Looker Enterprise. |
-| **Architecture Diagram**   | `diagrams/code_flow.dot` | Top-to-bottom Graphviz DOT architecture flow. |
+| **Architecture Diagram** | `diagrams/code_flow.dot` | Top-to-bottom Graphviz DOT architecture flow. |
 
 ---
 
